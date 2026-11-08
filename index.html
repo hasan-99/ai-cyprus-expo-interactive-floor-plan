@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>3D Floor Plan — AI Cyprus Expo</title>
+  <link rel="icon" type="image/png" href="assets/ai-cyprus-expo-favicon.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#040610;font-family:'Poppins',sans-serif;overflow:hidden;height:100vh;color:#fff}
+    #cv{position:fixed;inset:0;z-index:1}
+    /* Top bar */
+    .top-bar{position:fixed;top:0;left:0;right:0;z-index:10;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to bottom,rgba(4,6,16,.96),rgba(4,6,16,.4) 80%,transparent);pointer-events:none}
+    .brand{display:flex;align-items:center;gap:12px}.brand img{height:28px;opacity:.85}
+    .brand-text h1{font-size:1rem;font-weight:700;background:linear-gradient(135deg,#A5ADD1,#fff 60%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .brand-text span{font-size:8px;color:rgba(165,173,209,.4);letter-spacing:.14em;text-transform:uppercase;font-weight:500}
+    .mi{text-align:right}.mi .v{font-size:10px;color:rgba(165,173,209,.5);font-weight:500}.mi .d{font-size:9px;color:rgba(165,173,209,.25);margin-top:1px}
+    /* Tabs */
+    .tab-bar{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:2px;background:rgba(10,12,25,.7);backdrop-filter:blur(20px);border:1px solid rgba(165,173,209,.06);border-radius:11px;padding:3px}
+    .tb{padding:5px 14px;border:none;background:0;color:rgba(165,173,209,.4);font-family:'Poppins';font-size:9px;font-weight:600;cursor:pointer;border-radius:8px;transition:all .25s}
+    .tb:hover{color:rgba(165,173,209,.7)}.tb.active{background:rgba(59,76,155,.3);color:#fff}
+    /* Zone nav */
+    .zn{position:fixed;left:16px;top:50%;transform:translateY(-50%);z-index:20;display:flex;flex-direction:column;gap:3px}
+    .zb{display:flex;align-items:center;gap:7px;padding:7px 12px;background:rgba(10,12,25,.5);border:1px solid rgba(165,173,209,.04);border-radius:9px;color:rgba(165,173,209,.35);font-family:'Poppins';font-size:9px;font-weight:600;cursor:pointer;transition:all .3s;backdrop-filter:blur(10px)}
+    .zb:hover{background:rgba(59,76,155,.12);color:#fff;transform:translateX(4px)}.zb.active{background:rgba(59,76,155,.18);color:#fff;border-color:var(--c)}
+    .zb .dt{width:6px;height:6px;border-radius:3px;flex-shrink:0}
+    /* Zone panel */
+    .pn{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(160%) scale(.92);z-index:20;background:rgba(8,10,22,.9);backdrop-filter:blur(40px);border:1px solid rgba(165,173,209,.05);border-radius:18px;padding:22px 26px;min-width:400px;max-width:480px;transition:transform .6s cubic-bezier(.34,1.56,.64,1),opacity .4s;opacity:0;box-shadow:0 25px 70px rgba(0,0,0,.5)}
+    .pn.visible{transform:translateX(-50%) translateY(0) scale(1);opacity:1}
+    .pn .ph{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+    .pn .bg{width:42px;height:42px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+    .pn h2{font-size:1rem;font-weight:700}.pn .su{font-size:8px;color:rgba(165,173,209,.3);margin-top:1px;text-transform:uppercase;letter-spacing:.08em;font-weight:500}
+    .pn .visitors{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:10px;color:rgba(165,173,209,.45)}
+    .pn .visitors .pulse-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pd 2s ease infinite;flex-shrink:0}
+    @keyframes pd{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.4)}50%{box-shadow:0 0 0 5px rgba(74,222,128,0)}}
+    .pn .visitors .vc{font-weight:700;color:#4ade80;font-size:12px}
+    .pn .de{font-size:11px;line-height:1.65;color:rgba(165,173,209,.45);margin-bottom:12px;font-weight:300}
+    .pn .ss{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+    .pn .st{background:rgba(165,173,209,.03);border:1px solid rgba(165,173,209,.03);border-radius:9px;padding:9px 11px;opacity:0;transform:translateY(6px);transition:all .2s}
+    .pn.visible .st{animation:fu .35s ease forwards}
+    .pn.visible .st:nth-child(1){animation-delay:.08s}.pn.visible .st:nth-child(2){animation-delay:.16s}.pn.visible .st:nth-child(3){animation-delay:.24s}.pn.visible .st:nth-child(4){animation-delay:.32s}
+    @keyframes fu{to{opacity:1;transform:translateY(0)}}
+    .pn .st:hover{background:rgba(165,173,209,.06);transform:translateY(-1px)}
+    .pn .st .sl{font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:rgba(165,173,209,.22);margin-bottom:2px;font-weight:600}.pn .st .sv{font-size:11px;font-weight:600}
+    .pn .xb{position:absolute;top:10px;right:12px;width:24px;height:24px;border:none;background:rgba(165,173,209,.04);border-radius:7px;color:rgba(165,173,209,.3);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .25s}.pn .xb:hover{background:rgba(165,173,209,.1);color:#fff;transform:rotate(90deg)}
+    .cp{margin-top:8px;background:rgba(165,173,209,.03);border-radius:9px;padding:9px 11px}
+    .cp .ch{display:flex;justify-content:space-between;font-size:7px;margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em}.cp .cl{color:rgba(165,173,209,.22);font-weight:600}.cp .cv{font-weight:700;font-size:8px}
+    .cp .bt{height:3px;background:rgba(165,173,209,.05);border-radius:2px;overflow:hidden}.cp .bf{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.4,0,.2,1);width:0}
+    .pn .cta-btn{display:block;width:100%;margin-top:10px;padding:9px;border:none;border-radius:9px;font-family:'Poppins';font-size:10px;font-weight:700;letter-spacing:.04em;cursor:pointer;text-decoration:none;text-align:center;color:#fff;transition:all .3s;text-transform:uppercase}
+    .pn .cta-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+    /* Booth popup */
+    .booth-popup{position:fixed;top:50%;right:30px;transform:translateY(-50%) translateX(120%);z-index:22;background:rgba(8,10,22,.92);backdrop-filter:blur(40px);border:1px solid rgba(165,173,209,.06);border-radius:18px;padding:22px 26px;width:320px;transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .4s;opacity:0;box-shadow:0 25px 70px rgba(0,0,0,.5)}
+    .booth-popup.visible{transform:translateY(-50%) translateX(0);opacity:1}
+    .booth-popup .bp-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .booth-popup .bp-badge{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff}
+    .booth-popup .bp-title{font-size:14px;font-weight:700}.booth-popup .bp-type{font-size:9px;color:rgba(165,173,209,.4);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+    .booth-popup .bp-company{font-size:12px;font-weight:600;color:rgba(165,173,209,.7);margin-bottom:6px}
+    .booth-popup .bp-desc{font-size:11px;line-height:1.6;color:rgba(165,173,209,.4);margin-bottom:12px;font-weight:300}
+    .booth-popup .bp-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:10px;font-weight:600;margin-bottom:12px}
+    .booth-popup .bp-status.available{background:rgba(74,222,128,.08);color:#4ade80;border:1px solid rgba(74,222,128,.15)}
+    .booth-popup .bp-status.sold{background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.15)}
+    .booth-popup .bp-status.reserved{background:rgba(251,191,36,.08);color:#fbbf24;border:1px solid rgba(251,191,36,.15)}
+    .booth-popup .bp-status .sdot{width:6px;height:6px;border-radius:50%}
+    .booth-popup .bp-cta{display:block;width:100%;padding:10px;border:none;border-radius:9px;font-family:'Poppins';font-size:10px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;color:#fff;text-transform:uppercase;letter-spacing:.04em;transition:all .25s}
+    .booth-popup .bp-cta:hover{transform:translateY(-1px)}
+    .booth-popup .bp-close{position:absolute;top:10px;right:12px;width:24px;height:24px;border:none;background:rgba(165,173,209,.04);border-radius:7px;color:rgba(165,173,209,.3);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s}.booth-popup .bp-close:hover{background:rgba(165,173,209,.1);color:#fff}
+    /* Search */
+    .search-bar{position:fixed;top:64px;right:20px;z-index:20;display:flex;align-items:center;gap:0;pointer-events:auto}
+    .search-bar input{width:160px;padding:6px 12px;background:rgba(10,12,25,.7);backdrop-filter:blur(15px);border:1px solid rgba(165,173,209,.06);border-radius:9px;color:#fff;font-family:'Poppins';font-size:10px;outline:none;transition:border-color .2s}
+    .search-bar input::placeholder{color:rgba(165,173,209,.3)}.search-bar input:focus{border-color:rgba(59,76,155,.4)}
+    /* Legend */
+    .legend{position:fixed;bottom:20px;left:16px;z-index:20;background:rgba(8,10,22,.75);backdrop-filter:blur(15px);border:1px solid rgba(165,173,209,.05);border-radius:11px;padding:10px 14px;display:flex;flex-direction:column;gap:5px}
+    .legend-title{font-size:8px;color:rgba(165,173,209,.3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:2px}
+    .legend-item{display:flex;align-items:center;gap:7px;font-size:9px;color:rgba(165,173,209,.5)}
+    .legend-item .lc{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+    /* Toolbar */
+    .toolbar{position:fixed;bottom:20px;right:20px;z-index:20;display:flex;gap:4px}
+    .tool-btn{width:34px;height:34px;border:none;background:rgba(10,12,25,.6);backdrop-filter:blur(10px);border:1px solid rgba(165,173,209,.06);border-radius:9px;color:rgba(165,173,209,.4);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .25s;font-family:'Poppins'}
+    .tool-btn:hover{background:rgba(59,76,155,.18);color:#fff}.tool-btn.active{background:rgba(59,76,155,.25);color:#fff}
+    .tool-btn svg{width:16px;height:16px;fill:currentColor}
+    /* Hover label */
+    .hl{position:fixed;z-index:15;pointer-events:none;background:rgba(8,10,22,.88);backdrop-filter:blur(20px);border:1px solid rgba(165,173,209,.06);border-radius:9px;padding:7px 12px;font-size:10px;font-weight:600;opacity:0;transition:opacity .15s;white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+    .hl.visible{opacity:1}.hl .hd{display:inline-block;width:5px;height:5px;border-radius:2px;margin-right:7px}.hl .hs{font-size:8px;color:rgba(165,173,209,.3);margin-left:5px;font-weight:400}
+    /* Reset btn */
+    .rb{position:fixed;bottom:60px;right:20px;z-index:20;background:rgba(10,12,25,.5);border:1px solid rgba(165,173,209,.06);border-radius:9px;color:rgba(165,173,209,.4);padding:7px 14px;font-size:9px;font-family:'Poppins';font-weight:600;cursor:pointer;backdrop-filter:blur(15px);transition:all .3s;opacity:0;pointer-events:none}.rb.visible{opacity:1;pointer-events:auto}.rb:hover{background:rgba(59,76,155,.18);color:#fff}
+    /* FPV indicator */
+    .fpv-indicator{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-radius:50%;pointer-events:none;display:none}
+    .fpv-indicator.active{display:block}
+    /* Transition */
+    .transition-overlay{position:fixed;inset:0;z-index:25;background:radial-gradient(circle,transparent 0%,rgba(4,6,16,.9) 100%);opacity:0;pointer-events:none;transition:opacity .35s}.transition-overlay.active{opacity:1}
+    /* Confetti */
+    #confetti{position:fixed;inset:0;z-index:18;pointer-events:none}
+    /* Loader */
+    .ld{position:fixed;inset:0;z-index:100;background:#040610;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity 1s}.ld.hidden{opacity:0;pointer-events:none}
+    .ld img{height:34px;opacity:.8}.lt{font-size:8px;color:rgba(165,173,209,.25);letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+    .lbar{width:140px;height:2px;background:rgba(165,173,209,.04);border-radius:1px;overflow:hidden}
+    .lbf{height:100%;width:0%;background:linear-gradient(90deg,#3B4C9B,#A5ADD1);animation:lda 2s ease-out forwards}
+    @keyframes lda{0%{width:0}60%{width:85%}100%{width:100%}}
+    .wm{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);z-index:5;font-size:7px;color:rgba(165,173,209,.08);letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="ld" id="ld"><img src="assets/ai-cyprus-expo-favicon.png" alt="AI Cyprus Expo"/><div class="lt">Loading 3D Venue</div><div class="lbar"><div class="lbf"></div></div></div>
+  <div class="top-bar"><div class="brand"><img src="assets/ai-cyprus-expo-favicon.png" alt="AI Cyprus Expo"/><div class="brand-text"><h1>3D Floor Plan</h1><span>Interactive Venue Explorer</span></div></div><div class="mi"><div class="v">Carob Mill, Limassol</div><div class="d">23 — 24 April 2026</div></div></div>
+  <div class="tab-bar"><button class="tb active" data-tab="3d">3D Master Plan</button><button class="tb" data-tab="zones">Zones</button><button class="tb" data-tab="exhibition">Exhibition Area</button></div>
+  <div class="search-bar"><input type="text" id="searchInput" placeholder="Find booth (e.g. P1, 5)"/></div>
+  <div id="cv"></div>
+  <div class="zn" id="zn"></div>
+  <div class="hl" id="hl"><span class="hd" id="hd"></span><span id="ht"></span><span class="hs" id="hls"></span></div>
+  <canvas id="confetti"></canvas>
+  <div class="transition-overlay" id="transOvl"></div>
+  <div class="fpv-indicator" id="fpvInd"></div>
+
+  <!-- Zone panel -->
+  <div class="pn" id="pn"><button class="xb" id="xb">&times;</button>
+    <div class="ph"><div class="bg" id="pb"></div><div><h2 id="pt"></h2><div class="su" id="ps"></div></div></div>
+    <div class="visitors"><span class="pulse-dot"></span><span class="vc" id="pvc">0</span><span>visitors right now</span></div>
+    <p class="de" id="pd"></p><div class="ss" id="pss"></div>
+    <div class="cp"><div class="ch"><span class="cl">Current Occupancy</span><span class="cv" id="pcv">0%</span></div><div class="bt"><div class="bf" id="pbf"></div></div></div>
+    <a class="cta-btn" id="pcta" href="#" target="_blank">Get Your Pass</a>
+  </div>
+
+  <!-- Booth popup -->
+  <div class="booth-popup" id="bp"><button class="bp-close" id="bpClose">&times;</button>
+    <div class="bp-header"><div class="bp-badge" id="bpBadge"></div><div><div class="bp-title" id="bpTitle"></div><div class="bp-type" id="bpType"></div></div></div>
+    <div class="bp-company" id="bpCompany"></div>
+    <div class="bp-desc" id="bpDesc"></div>
+    <div class="bp-status" id="bpStatus"><span class="sdot" id="bpSDot"></span><span id="bpSText"></span></div>
+    <a class="bp-cta" id="bpCta" href="#" target="_blank">Reserve This Booth</a>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">Booth Types</div>
+    <div class="legend-item"><div class="lc" style="background:#E8943A"></div>Partner (P1-P5)</div>
+    <div class="legend-item"><div class="lc" style="background:#3DBDB5"></div>Premium (PR1-PR3)</div>
+    <div class="legend-item"><div class="lc" style="background:#eaeaef"></div>Standard (1-17)</div>
+    <div class="legend-title" style="margin-top:4px">Status</div>
+    <div class="legend-item"><div class="lc" style="background:#4ade80"></div>Available</div>
+    <div class="legend-item"><div class="lc" style="background:#fbbf24"></div>Reserved</div>
+    <div class="legend-item"><div class="lc" style="background:#ef4444"></div>Sold</div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="tool-btn" id="fpvBtn" title="First Person View">🚶</button>
+    <button class="tool-btn" id="fsBtn" title="Fullscreen">⛶</button>
+    <button class="tool-btn" id="ssBtn" title="Screenshot">📷</button>
+    <button class="tool-btn" id="sndBtn" title="Toggle Sound">🔇</button>
+  </div>
+  <button class="rb" id="rb">Reset View</button>
+  <div class="wm">AI Cyprus Expo &middot; Carob Mill</div>
+
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.171.0/examples/jsm/"}}</script>
+  <script type="module">
+    import*as THREE from'three';
+    import{OrbitControls}from'three/addons/controls/OrbitControls.js';
+    import{EffectComposer}from'three/addons/postprocessing/EffectComposer.js';
+    import{RenderPass}from'three/addons/postprocessing/RenderPass.js';
+    import{UnrealBloomPass}from'three/addons/postprocessing/UnrealBloomPass.js';
+    import{OutputPass}from'three/addons/postprocessing/OutputPass.js';
+
+    // ===== ZONE DATA =====
+    const ZD={
+      exhibition:{title:'Exhibition Area',icon:'🏢',sub:'West Wing — Carob Mill',color:0x5B8DD9,hex:'#5B8DD9',desc:'15+ AI exhibitor booths with live demos, product showcases, and interactive experiences.',stats:[['Exhibitors','15+'],['Booths','16 + 1 premium'],['Hours','9 AM — 6 PM'],['Access','All passes']],occ:72,visitors:127,cta:'Get Your Pass',ctaLink:'https://www.aicyprusexpo.com/tickets/',cT:{x:-7,y:2,z:-2},cP:{x:-3,y:10,z:8}},
+      stage:{title:'Main Stage',icon:'🎤',sub:'East Hall — Performance Area',color:0xE8943A,hex:'#E8943A',desc:'Keynotes, panels with 15+ panelists. Full AV with projection and livestream.',stats:[['Capacity','150 seated'],['Panelists','15+'],['Keynote','10:00 AM'],['Stream','YouTube Live']],occ:88,visitors:94,cta:'View Schedule',ctaLink:'https://www.aicyprusexpo.com/#schedule',cT:{x:9,y:2,z:-3},cP:{x:14,y:8,z:6}},
+      corridor:{title:'Networking Corridor',icon:'🤝',sub:'Central Flow Path',color:0xD4687A,hex:'#D4687A',desc:'L-shaped corridor with food stations, networking spots, and investor meeting areas.',stats:[['Connects','All zones'],['Meetings','Investor 1-on-1'],['Food','3 stations'],['Restrooms','Available']],occ:55,visitors:68,cta:'Become a Partner',ctaLink:'https://www.aicyprusexpo.com/partners/',cT:{x:2,y:1,z:3},cP:{x:6,y:12,z:14}},
+      registration:{title:'Registration',icon:'📋',sub:'South-West — Check-in',color:0xE85A9A,hex:'#E85A9A',desc:'Badge pickup. Exhibition, Business, VIP passes. Fast-track for VIP.',stats:[['Opens','8:30 AM'],['Passes','3 types'],['VIP','Fast-track'],['Help','All day']],occ:30,visitors:42,cta:'Register Now',ctaLink:'https://www.aicyprusexpo.com/tickets/',cT:{x:-3,y:1,z:5},cP:{x:0,y:7,z:12}},
+    };
+    const tCams={'3d':{p:{x:16,y:18,z:20},t:{x:1,y:0,z:2}},'zones':{p:{x:2,y:30,z:8},t:{x:1,y:0,z:2}},'exhibition':{p:{x:-3,y:10,z:8},t:{x:-7,y:2,z:-2}}};
+
+    // ===== BOOTH DATA (spaced layout matching original 3D image) =====
+    // Exhibition room: 14 wide x 12 deep, center at (-8, -3)
+    // x: -15 to -1, z: -9 to 3
+    const BD={
+      // Partner booths (tall, colored) — top row spread apart
+      P1:{label:'P1',type:'Partner',company:'TechVision AI',desc:'Enterprise AI solutions for digital transformation.',color:0xE8943A,hex:'#E8943A',status:'sold',size:'2.5 x 1.5m',x:-8.5,z:-7.5,w:2.8,d:1.6,h:2.2},
+      P2:{label:'P2',type:'Partner',company:'CyprusAI Labs',desc:'AI research and development for Mediterranean markets.',color:0x3B4C9B,hex:'#3B4C9B',status:'sold',size:'2.0 x 1.5m',x:-5,z:-7.5,w:2.2,d:1.6,h:2.2},
+      P3:{label:'P3',type:'Partner',company:'DataMind Solutions',desc:'Big data analytics and machine learning platforms.',color:0xDD4444,hex:'#DD4444',status:'sold',size:'1.8 x 1.8m',x:-13.5,z:-4,w:1.8,d:1.8,h:2.0},
+      P4:{label:'P4',type:'Partner',company:'GreenAI Tech',desc:'Sustainable AI solutions for smart cities.',color:0x33aa55,hex:'#33aa55',status:'reserved',size:'1.8 x 1.8m',x:-13.5,z:1,w:1.8,d:1.8,h:2.0},
+      P5:{label:'P5',type:'Partner',company:'NeuralEdge',desc:'Edge computing and neural network hardware.',color:0xE85A9A,hex:'#E85A9A',status:'sold',size:'1.6 x 1.6m',x:-7.5,z:-4.5,w:1.6,d:1.6,h:1.8},
+      // Premium booths (teal, medium) — center area, spaced
+      PR1:{label:'PR1',type:'Premium',company:'CloudAI Platform',desc:'Cloud-native AI deployment solutions.',color:0x3DBDB5,hex:'#3DBDB5',status:'sold',size:'1.6 x 1.6m',x:-7.5,z:-0.5,w:1.6,d:1.6,h:1.6},
+      PR2:{label:'PR2',type:'Premium',company:'RoboLogic',desc:'Robotic process automation with AI.',color:0x3DBDB5,hex:'#3DBDB5',status:'reserved',size:'1.6 x 1.6m',x:-5,z:-0.5,w:1.6,d:1.6,h:1.6},
+      PR3:{label:'PR3',type:'Premium',company:'VisionX',desc:'Computer vision for industrial applications.',color:0x3DBDB5,hex:'#3DBDB5',status:'sold',size:'1.5 x 1.5m',x:-5,z:-4.5,w:1.5,d:1.5,h:1.6},
+      // Standard booths — right column (1-8), well spaced
+      '1':{label:'1',type:'Standard',company:'Available',desc:'Standard booth near VIP lounge.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.5 x 1.3m',x:-2,z:1,w:1.5,d:1.3,h:0.8},
+      '2':{label:'2',type:'Standard',company:'Available',desc:'Standard booth, right column.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.5 x 1.3m',x:-2,z:-1,w:1.5,d:1.3,h:0.8},
+      '3':{label:'3',type:'Standard',company:'AutoML Cyprus',desc:'Automated machine learning tools.',color:0xeaeaef,hex:'#eaeaef',status:'sold',size:'1.5 x 1.3m',x:-2,z:-3,w:1.5,d:1.3,h:0.8},
+      '4':{label:'4',type:'Standard',company:'AI Security Co',desc:'AI-powered cybersecurity solutions.',color:0xeaeaef,hex:'#eaeaef',status:'sold',size:'1.5 x 1.3m',x:-2,z:-5.5,w:1.5,d:1.3,h:0.8},
+      '5':{label:'5',type:'Standard',company:'Available',desc:'Center-right area booth.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.5 x 1.3m',x:-4,z:-5.5,w:1.5,d:1.3,h:0.8},
+      '6':{label:'6',type:'Standard',company:'ChatBot Pro',desc:'Conversational AI for customer service.',color:0xeaeaef,hex:'#eaeaef',status:'reserved',size:'1.5 x 1.3m',x:-4,z:-3,w:1.5,d:1.3,h:0.8},
+      '7':{label:'7',type:'Standard',company:'Available',desc:'Good foot traffic position.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.5 x 1.3m',x:-4,z:-0.5,w:1.5,d:1.3,h:0.8},
+      '8':{label:'8',type:'Standard',company:'ML Analytics',desc:'Machine learning analytics platform.',color:0xeaeaef,hex:'#eaeaef',status:'sold',size:'1.5 x 1.3m',x:-4,z:1.5,w:1.5,d:1.3,h:0.8},
+      // Center-left column (9-14)
+      '9':{label:'9',type:'Standard',company:'Available',desc:'Center area booth.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.4 x 1.2m',x:-7.5,z:-2.5,w:1.4,d:1.2,h:0.8},
+      '10':{label:'10',type:'Standard',company:'DeepSense',desc:'Deep learning for IoT sensors.',color:0xeaeaef,hex:'#eaeaef',status:'sold',size:'1.4 x 1.2m',x:-5,z:-2.5,w:1.4,d:1.2,h:0.8},
+      '11':{label:'11',type:'Standard',company:'Available',desc:'Left column booth.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.5 x 1.3m',x:-11,z:-6,w:1.5,d:1.3,h:0.8},
+      '12':{label:'12',type:'Standard',company:'AI Health',desc:'AI diagnostics for healthcare.',color:0xeaeaef,hex:'#eaeaef',status:'reserved',size:'1.5 x 1.3m',x:-11,z:-4,w:1.5,d:1.3,h:0.8},
+      '13':{label:'13',type:'Standard',company:'Available',desc:'Left column, central.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.5 x 1.3m',x:-11,z:-1.5,w:1.5,d:1.3,h:0.8},
+      '14':{label:'14',type:'Standard',company:'LangTech',desc:'NLP and language AI tools.',color:0xeaeaef,hex:'#eaeaef',status:'sold',size:'1.5 x 1.3m',x:-11,z:0.5,w:1.5,d:1.3,h:0.8},
+      // Bottom row (15-17)
+      '15':{label:'15',type:'Standard',company:'Available',desc:'Bottom row, left.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.5 x 1.2m',x:-10,z:2.5,w:1.5,d:1.2,h:0.8},
+      '16':{label:'16',type:'Standard',company:'FinAI',desc:'AI for financial services.',color:0xeaeaef,hex:'#eaeaef',status:'sold',size:'1.5 x 1.2m',x:-7,z:2.5,w:1.5,d:1.2,h:0.8},
+      '17':{label:'17',type:'Standard',company:'Available',desc:'Bottom row, near exit.',color:0xeaeaef,hex:'#eaeaef',status:'available',size:'1.5 x 1.2m',x:-4,z:2.5,w:1.5,d:1.2,h:0.8},
+    };
+
+    // ===== SCENE =====
+    const scene=new THREE.Scene();scene.background=new THREE.Color(0x040610);scene.fog=new THREE.FogExp2(0x040610,0.007);
+    const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,400);camera.position.set(50,45,55);
+    const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+    renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
+    document.getElementById('cv').appendChild(renderer.domElement);
+    const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.45,0.3,0.88));composer.addPass(new OutputPass());
+    const ctrl=new OrbitControls(camera,renderer.domElement);ctrl.enableDamping=true;ctrl.dampingFactor=0.06;ctrl.minDistance=6;ctrl.maxDistance=55;ctrl.maxPolarAngle=Math.PI/2.15;ctrl.target.set(1,0,2);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0x1a2040,0.7));
+    const sun=new THREE.DirectionalLight(0xffeedd,1.8);sun.position.set(14,28,14);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+    const S=25;sun.shadow.camera.left=-S;sun.shadow.camera.right=S;sun.shadow.camera.top=S;sun.shadow.camera.bottom=-S;scene.add(sun);
+    scene.add(new THREE.DirectionalLight(0x4466aa,0.4).translateX(-12).translateY(10).translateZ(-6));
+
+    // Sky + Stars
+    scene.add(new THREE.Mesh(new THREE.SphereGeometry(130,32,32),new THREE.ShaderMaterial({side:THREE.BackSide,uniforms:{c1:{value:new THREE.Color(0x040610)},c2:{value:new THREE.Color(0x080e25)},c3:{value:new THREE.Color(0x0c1535)}},vertexShader:`varying vec3 vP;void main(){vP=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform vec3 c1,c2,c3;varying vec3 vP;void main(){float h=normalize(vP).y;vec3 c=mix(c1,c2,smoothstep(-0.1,0.2,h));c=mix(c,c3,smoothstep(0.2,0.8,h));gl_FragColor=vec4(c,1.);}`})));
+    const stGeo=new THREE.BufferGeometry(),stPos=new Float32Array(2000*3);
+    for(let i=0;i<2000;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(Math.random()*0.7+0.3),r=80+Math.random()*50;stPos[i*3]=r*Math.sin(ph)*Math.cos(th);stPos[i*3+1]=r*Math.cos(ph);stPos[i*3+2]=r*Math.sin(ph)*Math.sin(th)}
+    stGeo.setAttribute('position',new THREE.BufferAttribute(stPos,3));
+    scene.add(new THREE.Points(stGeo,new THREE.PointsMaterial({color:0xaabbee,size:0.15,transparent:true,opacity:0.6,sizeAttenuation:true,blending:THREE.AdditiveBlending})));
+
+    // Ground
+    const gnd=new THREE.Mesh(new THREE.PlaneGeometry(150,150),new THREE.MeshStandardMaterial({color:0x070a14,roughness:0.6,metalness:0.35}));gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;scene.add(gnd);
+    const rfl=new THREE.Mesh(new THREE.PlaneGeometry(38,32),new THREE.MeshStandardMaterial({color:0x0c0f1e,roughness:0.15,metalness:0.65}));rfl.rotation.x=-Math.PI/2;rfl.position.set(2,0.003,2);rfl.receiveShadow=true;scene.add(rfl);
+    scene.add(new THREE.GridHelper(100,100,0x0f1225,0x0b0e1c).translateY(0.008));
+
+    // Helpers
+    const CL=[],OM=new Map(),boothMeshes={};
+    function mk(o,x,y,z,opts={}){o.position.set(x,y,z);if(opts.rx!=null||opts.ry!=null||opts.rz!=null)o.rotation.set(opts.rx||0,opts.ry||0,opts.rz||0);if(opts.cs)o.castShadow=true;scene.add(o);return o}
+    function zm(c,o=0.92){return new THREE.MeshStandardMaterial({color:c,roughness:0.3,metalness:0.15,transparent:true,opacity:o})}
+    function add(m,z){m.userData.zoneName=z;m.castShadow=true;m.receiveShadow=true;CL.push(m);if(m.material)OM.set(m,m.material);scene.add(m);return m}
+    function wMat(c){return new THREE.MeshStandardMaterial({color:new THREE.Color(c).multiplyScalar(0.8),roughness:0.45,metalness:0.08,transparent:true,opacity:0.5,side:THREE.DoubleSide})}
+    function buildWalls(cx,cz,w,d,h,c,z,sk=[]){const wm=wMat(c);['n','s','w','e'].forEach(k=>{if(sk.includes(k))return;const isNS=k==='n'||k==='s';const geo=new THREE.BoxGeometry(isNS?w:0.12,h,isNS?0.12:d);const m=new THREE.Mesh(geo,wm);const px=cx+(k==='w'?-w/2:k==='e'?w/2:0),pz=cz+(k==='n'?-d/2:k==='s'?d/2:0);m.position.set(px,h/2,pz);m.castShadow=true;m.userData.zoneName=z;CL.push(m);OM.set(m,wm);scene.add(m)})}
+    const WH=3.5;
+
+    // ===== EXHIBITION (14w x 12d, center at -8, -3) =====
+    add(new THREE.Mesh(new THREE.BoxGeometry(14,0.3,12),zm(0x97B8E0)),'exhibition').position.set(-8,0.15,-3);
+    buildWalls(-8,-3,14,12,WH,0xccccdd,'exhibition',['e']);
+
+    // Build booths from BD
+    const partnerScreens=[];
+    Object.entries(BD).forEach(([id,b])=>{
+      const statusBorder=b.status==='available'?0x4ade80:b.status==='reserved'?0xfbbf24:0xef4444;
+      const mat=new THREE.MeshStandardMaterial({color:b.color,roughness:0.35,metalness:0.15});
+      const mesh=add(new THREE.Mesh(new THREE.BoxGeometry(b.w,b.h,b.d),mat),'exhibition');
+      mesh.position.set(b.x,0.3+b.h/2,b.z);
+      mesh.userData.boothId=id;
+      boothMeshes[id]=mesh;
+      // Status border ring on floor
+      const ring=new THREE.Mesh(new THREE.RingGeometry(Math.max(b.w,b.d)*0.55,Math.max(b.w,b.d)*0.55+0.06,16),new THREE.MeshBasicMaterial({color:statusBorder,transparent:true,opacity:0.5,side:THREE.DoubleSide}));
+      ring.rotation.x=-Math.PI/2;ring.position.set(b.x,0.32,b.z);scene.add(ring);
+      // Label
+      const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');
+      ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,128,64);ctx.font='bold 26px Poppins';ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(b.label,64,32);
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));
+      sp.position.set(b.x,0.3+b.h+0.35,b.z);sp.scale.set(1,0.5,1);scene.add(sp);
+      // Partner booth screens
+      if(b.type==='Partner'){
+        const scMat=new THREE.MeshStandardMaterial({color:0x111122,emissive:b.color,emissiveIntensity:0.5,roughness:0.1,side:THREE.DoubleSide});
+        const sc=new THREE.Mesh(new THREE.PlaneGeometry(b.w*0.6,b.h*0.4),scMat);
+        sc.position.set(b.x,0.3+b.h*0.6,b.z+b.d/2+0.01);scene.add(sc);
+        partnerScreens.push({mesh:sc,mat:scMat,idx:partnerScreens.length});
+      }
+    });
+
+    // Networking tables (left side, near P3)
+    for(let i=0;i<3;i++){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.6,12),new THREE.MeshStandardMaterial({color:0xdddddd,roughness:0.4}));t.position.set(-13.5,-1.5+i*1.5,0.3+0.6);t.castShadow=true;scene.add(t);
+      for(let c=0;c<3;c++){const ch=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,0.4,8),new THREE.MeshStandardMaterial({color:0xbbbbcc,roughness:0.5}));ch.position.set(-13.5+Math.cos(c*2.1)*0.6,0.5,-1.5+i*1.5+Math.sin(c*2.1)*0.6);ch.castShadow=true;scene.add(ch)}}
+    // VIP lounge (top-right corner of exhibition)
+    mk(new THREE.Mesh(new THREE.BoxGeometry(1.5,0.5,0.5),new THREE.MeshStandardMaterial({color:0x444466,roughness:0.5})),-2.5,0.55,-7.5,{cs:true});
+    mk(new THREE.Mesh(new THREE.BoxGeometry(1.5,0.5,0.5),new THREE.MeshStandardMaterial({color:0x444466,roughness:0.5})),-2.5,0.55,-8.2,{cs:true});
+    mk(new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.5,8),new THREE.MeshStandardMaterial({color:0xdddddd,roughness:0.4})),-2,0.55,-7.8,{cs:true});
+    // Sub-zone labels
+    function zLabel(t,x,y,z,c){const cv=document.createElement('canvas');cv.width=512;cv.height=96;const ctx=cv.getContext('2d');ctx.font='bold 30px Poppins';ctx.fillStyle=c;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,256,48);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,opacity:0.7}));sp.position.set(x,y,z);sp.scale.set(2.8,0.55,1);scene.add(sp)}
+    zLabel('Innovation & Demo Zone',-11,WH+0.4,-8,'#E85A9A');zLabel('VIP / Executive Lounge',-2.5,WH+0.4,-8,'#54c8e8');zLabel('Networking Zone',-13.5,WH+0.4,-1.5,'#DD4444');zLabel('Hospitality Zone',-13.5,WH+0.4,2,'#33aa55');
+
+    // ===== CORRIDOR =====
+    add(new THREE.Mesh(new THREE.BoxGeometry(5,0.2,14),zm(0xD4687A,0.88)),'corridor').position.set(1.5,0.1,0);
+    add(new THREE.Mesh(new THREE.BoxGeometry(15,0.2,5),zm(0xD4687A,0.88)),'corridor').position.set(4,0.1,7.5);
+    const cwm=wMat(0xccccdd);[[0.12,WH,14,-1,WH/2,0],[1.5,WH,0.12,-0.25,WH/2,-7],[1.5,WH,0.12,3.25,WH/2,-7],[0.12,WH,3,4,WH/2,-5.5],[15,WH,0.12,4,WH/2,10],[0.12,WH,5,-3.5,WH/2,7.5],[0.12,WH,5,11.5,WH/2,7.5]].forEach(w=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w[0],w[1],w[2]),cwm);m.position.set(w[3],w[4],w[5]);m.castShadow=true;scene.add(m)});
+
+    // Visitor path (animated dashed line on corridor floor)
+    const pathPts=[new THREE.Vector3(1.5,0.06,-7),new THREE.Vector3(1.5,0.06,-2),new THREE.Vector3(1.5,0.06,5),new THREE.Vector3(4,0.06,7.5),new THREE.Vector3(11,0.06,7.5)];
+    const pathGeo=new THREE.BufferGeometry().setFromPoints(pathPts);
+    const pathMat=new THREE.LineDashedMaterial({color:0x54c8e8,dashSize:0.5,gapSize:0.3,transparent:true,opacity:0.4});
+    const pathLine=new THREE.Line(pathGeo,pathMat);pathLine.computeLineDistances();scene.add(pathLine);
+
+    // ===== STAGE =====
+    add(new THREE.Mesh(new THREE.BoxGeometry(7.5,0.35,7),zm(0xE8943A)),'stage').position.set(8,0.175,-3.5);
+    buildWalls(8,-3.5,7.5,7,WH+0.5,0xccccdd,'stage',['w']);
+    const panelMat=new THREE.MeshStandardMaterial({color:0x1a1a28,roughness:0.2,metalness:0.5});
+    [{x:6.2,z:-5.8,w:2.8,d:1.8,ry:-0.4},{x:9.2,z:-5.2,w:2.4,d:1.6,ry:0.3},{x:7.5,z:-3.8,w:3,d:2,ry:-0.2},{x:10.2,z:-4,w:2,d:1.4,ry:0.45},{x:8.8,z:-2.2,w:2.5,d:1.5,ry:-0.35},{x:6,z:-2.8,w:1.8,d:1.2,ry:0.15}].forEach(p=>{const m=add(new THREE.Mesh(new THREE.BoxGeometry(p.w,0.08,p.d),panelMat),'stage');m.position.set(p.x,0.4,p.z);m.rotation.y=p.ry;m.rotation.x=-0.15});
+    const qrMat=new THREE.MeshStandardMaterial({color:0x333344,emissive:0x3B4C9B,emissiveIntensity:0.3,roughness:0.15});
+    add(new THREE.Mesh(new THREE.BoxGeometry(1,1.2,0.08),qrMat),'stage').position.set(11.2,0.95,-1);
+
+    // ===== REGISTRATION =====
+    add(new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.6,0.2,32),zm(0xE85A9A)),'registration').position.set(-3,0.1,5.5);
+    add(new THREE.Mesh(new THREE.BoxGeometry(2.8,0.9,0.5),new THREE.MeshStandardMaterial({color:0xe0e0e8,roughness:0.4})),'registration').position.set(-3,0.65,5.5);
+
+    // ===== ENTRANCES + ARROWS =====
+    function archway(x,z,ry,col){const g=new THREE.Group();const pm=new THREE.MeshStandardMaterial({color:0x888899,roughness:0.4,metalness:0.2});
+      const p1=new THREE.Mesh(new THREE.BoxGeometry(0.25,3.5,0.25),pm);p1.position.set(-1.3,1.75,0);p1.castShadow=true;
+      const p2=p1.clone();p2.position.set(1.3,1.75,0);
+      const bm=new THREE.Mesh(new THREE.BoxGeometry(3,0.2,0.25),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.5,roughness:0.2}));bm.position.set(0,3.6,0);
+      g.add(p1,p2,bm);g.position.set(x,0,z);g.rotation.y=ry;scene.add(g);mk(new THREE.PointLight(col,2,6),x,2.5,z)}
+    archway(1.5,-7.5,0,0xE8943A);archway(4,10.5,0,0x9B59B6);
+    const arrows=[];
+    function mkArr(x,z,rz,col=0x54c8e8){const sh=new THREE.Shape();sh.moveTo(0,0.4);sh.lineTo(0.28,0);sh.lineTo(0.1,0);sh.lineTo(0.1,-0.28);sh.lineTo(-0.1,-0.28);sh.lineTo(-0.1,0);sh.lineTo(-0.28,0);sh.closePath();const m=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:0.05,bevelEnabled:false}),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.6,roughness:0.3}));m.rotation.x=-Math.PI/2;m.rotation.z=rz;m.position.set(x,0.4,z);scene.add(m);arrows.push(m)}
+    mkArr(0.8,-7.5,Math.PI);mkArr(2.2,-7.5,Math.PI);mkArr(3,11,0);mkArr(5,11,0);mkArr(3,-3,Math.PI);mkArr(3,-1,Math.PI);mkArr(0,4,0);mkArr(0,6,Math.PI/2);mkArr(6,6,-Math.PI/2);mkArr(8,8.5,-Math.PI/2);
+    function mkLabel(t,p,c){const cv=document.createElement('canvas');cv.width=512;cv.height=128;const ctx=cv.getContext('2d');ctx.font='600 42px Poppins';ctx.fillStyle=c;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,256,64);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,blending:THREE.AdditiveBlending}));sp.position.copy(p);sp.scale.set(4,1,1);scene.add(sp)}
+    mkLabel('Parking Entrance',new THREE.Vector3(1.5,2.5,-9.5),'#E8943A');mkLabel('Castle Entrance',new THREE.Vector3(4,2.5,13.5),'#9B59B6');
+
+    // ===== ENVIRONMENT =====
+    function addTree(x,z,h=3){mk(new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.13,h*0.4,6),new THREE.MeshStandardMaterial({color:0x4a3520,roughness:0.8})),x,h*0.2,z,{cs:true});mk(new THREE.Mesh(new THREE.SphereGeometry(h*0.28,8,6),new THREE.MeshStandardMaterial({color:0x2a5530,roughness:0.7})),x,h*0.5,z,{cs:true})}
+    addTree(-16,-5,3.5);addTree(-16,8,3);addTree(14,-6,3);addTree(14,2,3.5);addTree(14,10,2.8);addTree(-5,-10,3);addTree(5,-10,3.2);addTree(-5,14,2.8);addTree(8,14,3);
+    function addLamp(x,z){mk(new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,4,6),new THREE.MeshStandardMaterial({color:0x555555,roughness:0.4,metalness:0.3})),x,2,z);mk(new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8),new THREE.MeshStandardMaterial({color:0xffeebb,emissive:0xffeebb,emissiveIntensity:1})),x,4.1,z);mk(new THREE.PointLight(0xffeebb,0.7,8),x,4,z)}
+    addLamp(-15,-8);addLamp(-15,11);addLamp(13,-8);addLamp(13,13);addLamp(0,-10);addLamp(8,14);
+    function addCar(x,z,ry,col){const g=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.6,0.9),new THREE.MeshStandardMaterial({color:col,roughness:0.3,metalness:0.4}));b.position.y=0.5;b.castShadow=true;g.add(b);const c=new THREE.Mesh(new THREE.BoxGeometry(1,0.45,0.8),new THREE.MeshStandardMaterial({color:0x222233,roughness:0.2,metalness:0.5,transparent:true,opacity:0.7}));c.position.set(0.1,0.85,0);g.add(c);g.position.set(x,0,z);g.rotation.y=ry;scene.add(g)}
+    addCar(-4,-11,0.2,0x3355aa);addCar(-1.5,-11,-0.1,0xaa3333);addCar(2,-11.5,0.15,0x33aa55);addCar(5,-11,0,0x888888);addCar(7.5,-11.5,-0.1,0xccaa33);
+
+    // ===== PEOPLE (some walking, some stationary at booths) =====
+    const ppl=[];
+    function addP(x,z,ci,stationary=false){const g=new THREE.Group();const cols=[0x3B4C9B,0x6C5CE7,0xA5ADD1,0xE8943A,0xD4AF37,0x555577,0x445588,0x884455];
+      const body=new THREE.Mesh(new THREE.CapsuleGeometry(0.13,0.5,4,8),new THREE.MeshStandardMaterial({color:cols[ci%8],roughness:0.6}));body.position.y=0.5;body.castShadow=true;g.add(body);
+      const head=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,8),new THREE.MeshStandardMaterial({color:0xeeddcc,roughness:0.5}));head.position.y=1.0;head.castShadow=true;g.add(head);
+      g.position.set(x,0,z);scene.add(g);
+      ppl.push({g,sp:stationary?0:0.2+Math.random()*0.4,rad:stationary?0:0.6+Math.random()*1.8,off:Math.random()*Math.PI*2,sx:x,sz:z})}
+    // Walking people (spread across bigger exhibition)
+    for(let i=0;i<10;i++)addP(-14+Math.random()*12,-8+Math.random()*10,i);
+    for(let i=0;i<5;i++)addP(-0.5+Math.random()*4,-4+Math.random()*12,i+2);
+    for(let i=0;i<4;i++)addP(6+Math.random()*4,-6+Math.random()*4.5,i+4);
+    for(let i=0;i<2;i++)addP(-4+Math.random()*2,5+Math.random()*1.5,i+3);
+    // Stationary people at partner booths
+    addP(-8.5,-6.5,0,true);addP(-5,-6.5,1,true);addP(-13.5,-3,2,true);addP(-13.5,0,3,true);
+    addP(-7.5,-3.5,4,true);addP(-7.5,0.5,5,true);
+    // Sitting at networking tables
+    addP(-13.8,-1.2,6,true);addP(-13.2,0.5,7,true);addP(-13.5,1.8,0,true);
+
+    // ===== DRONES =====
+    const drones=[];
+    [{r:14,h:8,s:0.3,hb:1.5,lc:0xff0000},{r:10,h:10,s:-0.45,hb:1,lc:0x00ff44},{r:18,h:6,s:0.2,hb:2,lc:0x3388ff}].forEach((cfg,di)=>{
+      const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(0.4,0.15,0.4),new THREE.MeshStandardMaterial({color:0x333344,roughness:0.3,metalness:0.5})));
+      for(let i=0;i<4;i++){const arm=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.04,0.06),new THREE.MeshStandardMaterial({color:0x444455}));arm.rotation.y=i*Math.PI/2;arm.position.x=Math.cos(i*Math.PI/2)*0.3;arm.position.z=Math.sin(i*Math.PI/2)*0.3;g.add(arm)}
+      const led=new THREE.Mesh(new THREE.SphereGeometry(0.04,6,6),new THREE.MeshStandardMaterial({color:cfg.lc,emissive:cfg.lc,emissiveIntensity:1}));led.position.y=-0.08;g.add(led);
+      g.position.y=cfg.h;scene.add(g);drones.push({group:g,led,offset:di*Math.PI*2/3,...cfg})});
+
+    // Particles
+    const PC=600,pGeo=new THREE.BufferGeometry(),pPos=new Float32Array(PC*3),pCol=new Float32Array(PC*3);
+    const pcols=[new THREE.Color(0x3B4C9B),new THREE.Color(0xA5ADD1),new THREE.Color(0x6C5CE7)];
+    for(let i=0;i<PC;i++){pPos[i*3]=(Math.random()-0.5)*55;pPos[i*3+1]=Math.random()*16;pPos[i*3+2]=(Math.random()-0.5)*55;const c=pcols[~~(Math.random()*3)];pCol[i*3]=c.r;pCol[i*3+1]=c.g;pCol[i*3+2]=c.b}
+    pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));pGeo.setAttribute('color',new THREE.BufferAttribute(pCol,3));
+    const particles=new THREE.Points(pGeo,new THREE.PointsMaterial({size:0.06,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,sizeAttenuation:true,vertexColors:true}));scene.add(particles);
+
+    // Rings
+    const rings=[];
+    Object.values(ZD).forEach((d,i)=>{[{r1:1.2,r2:1.35,s:1},{r1:0.5,r2:0.6,s:0.8}].forEach((cfg,j)=>{const rm=new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:0.2,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});const ring=new THREE.Mesh(new THREE.RingGeometry(cfg.r1,cfg.r2,32),rm);ring.rotation.x=-Math.PI/2;ring.position.set(d.cT.x,0.04,d.cT.z);scene.add(ring);rings.push({mesh:ring,mat:rm,base:cfg.s,off:j*Math.PI+i*0.5})})});
+
+    // ===== AMBIENT SOUND =====
+    let audioCtx=null,noiseNode=null,noiseGain=null,soundOn=false;
+    function initSound(){if(audioCtx)return;audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+      const bufSize=2*audioCtx.sampleRate,buf=audioCtx.createBuffer(1,bufSize,audioCtx.sampleRate),data=buf.getChannelData(0);
+      for(let i=0;i<bufSize;i++)data[i]=(Math.random()*2-1)*0.015;
+      noiseNode=audioCtx.createBufferSource();noiseNode.buffer=buf;noiseNode.loop=true;
+      noiseGain=audioCtx.createGain();noiseGain.gain.value=0;
+      const filt=audioCtx.createBiquadFilter();filt.type='lowpass';filt.frequency.value=800;
+      noiseNode.connect(filt);filt.connect(noiseGain);noiseGain.connect(audioCtx.destination);noiseNode.start()}
+    function toggleSound(){if(!audioCtx)initSound();soundOn=!soundOn;
+      document.getElementById('sndBtn').textContent=soundOn?'🔊':'🔇';
+      if(soundOn&&noiseGain)noiseGain.gain.setTargetAtTime(0.3,audioCtx.currentTime,0.5);
+      else if(noiseGain)noiseGain.gain.setTargetAtTime(0,audioCtx.currentTime,0.3)}
+
+    // ===== CONFETTI =====
+    const confCv=document.getElementById('confetti');confCv.width=innerWidth;confCv.height=innerHeight;const confCtx=confCv.getContext('2d');let confParts=[];
+    function spawnConf(c){for(let i=0;i<60;i++)confParts.push({x:innerWidth/2+(Math.random()-0.5)*200,y:innerHeight/2,vx:(Math.random()-0.5)*10,vy:-Math.random()*10-3,w:Math.random()*7+2,h:Math.random()*3+2,color:c||`hsl(${Math.random()*360},70%,55%)`,life:100+Math.random()*50,rot:Math.random()*Math.PI*2,rv:Math.random()*0.3-0.15})}
+
+    // ===== UI =====
+    const navC=document.getElementById('zn');
+    Object.entries(ZD).forEach(([k,d])=>{const b=document.createElement('button');b.className='zb';b.style.setProperty('--c',d.hex);b.innerHTML=`<span class="dt" style="background:${d.hex};box-shadow:0 0 6px ${d.hex}"></span>${d.title}`;b.onclick=()=>selZ(k);b.dataset.z=k;navC.appendChild(b)});
+    document.querySelectorAll('.tb').forEach(btn=>{btn.onclick=()=>{document.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const t=btn.dataset.tab,cam=tCams[t];if(cam){hideP();hideBP();aCam(cam.p,cam.t);if(t==='exhibition')setTimeout(()=>selZ('exhibition'),900)}}});
+
+    const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+    const hl=document.getElementById('hl'),hd=document.getElementById('hd'),htEl=document.getElementById('ht'),hsEl=document.getElementById('hls');
+    const pn=document.getElementById('pn'),rb=document.getElementById('rb'),bp=document.getElementById('bp');
+    let hov=null,sel=null,animF=false,idleTime=0,fpvMode=false;
+
+    function glow(z,on){CL.forEach(o=>{if(o.userData.zoneName===z&&OM.has(o)){if(on){const c=OM.get(o).clone();c.emissive=new THREE.Color(OM.get(o).color);c.emissiveIntensity=0.25;o.material=c}else o.material=OM.get(o)}})}
+
+    window.addEventListener('mousemove',e=>{mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;hl.style.left=(e.clientX+16)+'px';hl.style.top=(e.clientY-26)+'px';idleTime=0});
+    window.addEventListener('mousedown',()=>{idleTime=0});window.addEventListener('wheel',()=>{idleTime=0});
+
+    renderer.domElement.addEventListener('click',()=>{
+      if(animF)return;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects(CL);
+      if(hits.length){const obj=hits[0].object;
+        // Check booth first
+        if(obj.userData.boothId&&BD[obj.userData.boothId]){showBP(obj.userData.boothId);return}
+        // Then zone
+        if(obj.userData.zoneName&&ZD[obj.userData.zoneName])selZ(obj.userData.zoneName)}});
+
+    function selZ(n){if(animF)return;const d=ZD[n];if(!d)return;if(sel&&sel!==n)glow(sel,false);sel=n;glow(n,true);hideBP();
+      document.querySelectorAll('.zb').forEach(b=>b.classList.toggle('active',b.dataset.z===n));
+      showP(d);aCam(d.cP,d.cT);rb.classList.add('visible');idleTime=0;spawnConf(d.hex)}
+
+    function showP(d){pn.style.setProperty('--glow-color',d.hex+'44');
+      document.getElementById('pb').style.background=`linear-gradient(135deg,${d.hex},${d.hex}88)`;document.getElementById('pb').textContent=d.icon;
+      document.getElementById('pt').textContent=d.title;document.getElementById('ps').textContent=d.sub;document.getElementById('pd').textContent=d.desc;
+      const vcEl=document.getElementById('pvc');let vc=0;const tgt=d.visitors||0;const vi=setInterval(()=>{vc+=Math.ceil((tgt-vc)*0.15);if(vc>=tgt){vc=tgt;clearInterval(vi)}vcEl.textContent=vc},30);
+      document.getElementById('pss').innerHTML=d.stats.map(([l,v])=>`<div class="st"><div class="sl">${l}</div><div class="sv">${v}</div></div>`).join('');
+      const bf=document.getElementById('pbf');bf.style.width='0%';bf.style.background=`linear-gradient(90deg,${d.hex},${d.hex}88)`;
+      const pcv=document.getElementById('pcv');let ov=0;const oi=setInterval(()=>{ov+=Math.ceil((d.occ-ov)*0.1);if(ov>=d.occ){ov=d.occ;clearInterval(oi)}pcv.textContent=ov+'%'},25);
+      setTimeout(()=>bf.style.width=d.occ+'%',80);
+      const cta=document.getElementById('pcta');cta.textContent=d.cta;cta.href=d.ctaLink;cta.style.background=`linear-gradient(135deg,${d.hex},${d.hex}cc)`;
+      pn.classList.add('visible')}
+
+    function hideP(){pn.classList.remove('visible');document.querySelectorAll('.zb').forEach(b=>b.classList.remove('active'));if(sel){glow(sel,false);sel=null}}
+
+    // Booth popup
+    function showBP(id){const b=BD[id];if(!b)return;hideBP();hideP();
+      document.getElementById('bpBadge').textContent=b.label;document.getElementById('bpBadge').style.background=`linear-gradient(135deg,${b.hex},${b.hex}88)`;
+      document.getElementById('bpTitle').textContent='Booth '+b.label;document.getElementById('bpType').textContent=b.type+' — '+b.size;
+      document.getElementById('bpCompany').textContent=b.company;document.getElementById('bpDesc').textContent=b.desc;
+      const st=document.getElementById('bpStatus');st.className='bp-status '+b.status;
+      document.getElementById('bpSDot').style.background=b.status==='available'?'#4ade80':b.status==='reserved'?'#fbbf24':'#ef4444';
+      document.getElementById('bpSText').textContent=b.status==='available'?'Available for booking':b.status==='reserved'?'Reserved — Contact us':'Sold';
+      const cta=document.getElementById('bpCta');
+      cta.textContent=b.status==='available'?'Reserve This Booth':b.status==='reserved'?'Contact About This Booth':'View Exhibitor';
+      cta.style.background=b.status==='available'?'linear-gradient(135deg,#4ade80,#22c55e)':b.status==='reserved'?'linear-gradient(135deg,#fbbf24,#f59e0b)':`linear-gradient(135deg,${b.hex},${b.hex}cc)`;
+      cta.href='https://www.aicyprusexpo.com/partners/';
+      // Fly to booth
+      aCam({x:b.x+3,y:4,z:b.z+4},{x:b.x,y:1,z:b.z});
+      bp.classList.add('visible');rb.classList.add('visible')}
+    function hideBP(){bp.classList.remove('visible')}
+    document.getElementById('bpClose').onclick=()=>{hideBP();resetC()};
+
+    document.getElementById('xb').onclick=()=>{hideP();resetC()};rb.onclick=resetC;
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){resetC();hideBP()}});
+
+    function resetC(){aCam({x:16,y:18,z:20},{x:1,y:0,z:2});rb.classList.remove('visible');hideP();hideBP();
+      document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('active',b.dataset.tab==='3d'));if(fpvMode)toggleFPV()}
+
+    const transOvl=document.getElementById('transOvl');
+    function aCam(toP,toT){animF=true;transOvl.classList.add('active');setTimeout(()=>transOvl.classList.remove('active'),500);
+      const sp=camera.position.clone(),st=ctrl.target.clone(),ep=new THREE.Vector3(toP.x,toP.y,toP.z),et=new THREE.Vector3(toT.x,toT.y,toT.z),dur=1400,t0=performance.now(),ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+      (function step(now){const t=Math.min((now-t0)/dur,1),e=ease(t);camera.position.lerpVectors(sp,ep,e);ctrl.target.lerpVectors(st,et,e);ctrl.update();if(t<1)requestAnimationFrame(step);else animF=false})(t0)}
+
+    setTimeout(()=>{aCam({x:16,y:18,z:20},{x:1,y:0,z:2});document.getElementById('ld').classList.add('hidden')},2200);
+
+    // ===== SEARCH =====
+    document.getElementById('searchInput').addEventListener('keydown',e=>{
+      if(e.key==='Enter'){const q=e.target.value.trim().toUpperCase();
+        if(BD[q]){showBP(q);e.target.blur()}
+        else if(ZD[q.toLowerCase()]){selZ(q.toLowerCase());e.target.blur()}}});
+
+    // ===== FIRST PERSON VIEW =====
+    const fpvInd=document.getElementById('fpvInd');
+    function toggleFPV(){fpvMode=!fpvMode;document.getElementById('fpvBtn').classList.toggle('active',fpvMode);fpvInd.classList.toggle('active',fpvMode);
+      if(fpvMode){hideP();hideBP();aCam({x:1.5,y:1.6,z:-5},{x:1.5,y:1.6,z:-3});ctrl.maxPolarAngle=Math.PI*0.85;ctrl.minDistance=0.5;ctrl.maxDistance=10}
+      else{ctrl.maxPolarAngle=Math.PI/2.15;ctrl.minDistance=6;ctrl.maxDistance=55;resetC()}}
+    document.getElementById('fpvBtn').onclick=toggleFPV;
+
+    // ===== FULLSCREEN =====
+    document.getElementById('fsBtn').onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()};
+
+    // ===== SCREENSHOT =====
+    document.getElementById('ssBtn').onclick=()=>{composer.render();const link=document.createElement('a');link.download='venue-3d-'+Date.now()+'.png';link.href=renderer.domElement.toDataURL('image/png');link.click()};
+
+    // ===== SOUND =====
+    document.getElementById('sndBtn').onclick=toggleSound;
+
+    // ===== RENDER LOOP =====
+    const clock=new THREE.Clock();
+    (function render(){
+      requestAnimationFrame(render);const t=clock.getElapsedTime(),dt=clock.getDelta();idleTime+=dt;
+
+      if(idleTime>10&&!animF&&!sel&&!fpvMode){ctrl.autoRotate=true;ctrl.autoRotateSpeed=0.35}else ctrl.autoRotate=false;
+
+      // Arrows
+      arrows.forEach((a,i)=>{a.position.y=0.4+Math.sin(t*2.5+i*0.7)*0.18;a.material.emissiveIntensity=0.4+Math.sin(t*3+i)*0.25});
+      // Rings
+      rings.forEach(r=>{const ph=t*1.5+r.off;r.mesh.scale.setScalar(r.base+Math.sin(ph)*0.15);r.mat.opacity=0.12+Math.sin(ph)*0.08});
+      // People
+      ppl.forEach(p=>{if(p.rad>0){p.g.position.x=p.sx+Math.sin(t*p.sp+p.off)*p.rad;p.g.position.z=p.sz+Math.cos(t*p.sp*0.7+p.off)*p.rad*0.6;p.g.rotation.y=Math.atan2(Math.cos(t*p.sp+p.off)*p.rad,-Math.sin(t*p.sp*0.7+p.off)*p.rad*0.6)}});
+      // Drones
+      drones.forEach(d=>{const a=t*d.s+d.offset;d.group.position.x=Math.cos(a)*d.r;d.group.position.z=Math.sin(a)*d.r;d.group.position.y=d.h+Math.sin(t*0.8+d.offset)*d.hb;d.group.rotation.y=-a+Math.PI/2;d.led.material.emissiveIntensity=0.5+Math.sin(t*8+d.offset*2)*0.5});
+      // Partner screens animate
+      partnerScreens.forEach(s=>{s.mat.emissiveIntensity=0.35+Math.sin(t*2+s.idx*1.5)*0.2});
+      // QR pulse
+      qrMat.emissiveIntensity=0.25+Math.sin(t*2)*0.1;
+      // Path dash animate
+      pathMat.dashSize=0.5+Math.sin(t)*0.2;
+      // Particles
+      const pa=particles.geometry.attributes.position.array;for(let i=0;i<PC;i++){pa[i*3+1]+=Math.sin(t*0.25+i)*0.001;if(pa[i*3+1]>16)pa[i*3+1]=0}particles.geometry.attributes.position.needsUpdate=true;particles.rotation.y=t*0.01;
+      // Sound volume based on camera distance
+      if(soundOn&&noiseGain){const dist=camera.position.length();const vol=Math.max(0,Math.min(0.5,1-dist/40));noiseGain.gain.setTargetAtTime(vol*0.4,audioCtx.currentTime,0.1)}
+      // Confetti
+      confCtx.clearRect(0,0,innerWidth,innerHeight);
+      for(let i=confParts.length-1;i>=0;i--){const p=confParts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.vx*=0.99;p.rot+=p.rv;p.life--;confCtx.save();confCtx.translate(p.x,p.y);confCtx.rotate(p.rot);confCtx.fillStyle=p.color;confCtx.globalAlpha=Math.min(1,p.life/25);confCtx.fillRect(-p.w/2,-p.h/2,p.w,p.h);confCtx.restore();if(p.life<=0)confParts.splice(i,1)}
+
+      // Hover (booth-aware)
+      ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects(CL);
+      if(hits.length){const obj=hits[0].object;const bid=obj.userData.boothId;const zn=obj.userData.zoneName;
+        if(bid&&BD[bid]){const b=BD[bid];if(bid!==hov){hov=bid;hd.style.background=b.hex;htEl.textContent=b.label+' — '+b.company;hsEl.textContent=b.status==='available'?'Available':b.status;hl.classList.add('visible');renderer.domElement.style.cursor='pointer'}}
+        else if(zn&&ZD[zn]){const d=ZD[zn];if(zn!==hov){if(hov&&typeof hov==='string'&&hov.length<4){}hov=zn;hd.style.background=d.hex;htEl.textContent=d.title;hsEl.textContent='— Click to explore';hl.classList.add('visible');renderer.domElement.style.cursor='pointer'}}
+      }else{if(hov){hov=null;hl.classList.remove('visible');renderer.domElement.style.cursor='default'}}
+
+      ctrl.update();composer.render()})();
+
+    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);confCv.width=innerWidth;confCv.height=innerHeight});
+  </script>
+</body>
+</html>
