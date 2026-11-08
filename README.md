@@ -21,6 +21,10 @@ Explore a detailed, interactive 3D model of an expo venue. Visitors can orbit th
 
 ![Top-down zones view showing exhibition booths, the networking corridor, and stage areas](screenshots/zones-overview.png)
 
+### Booth details
+
+![A selected partner booth with exhibitor details and availability](screenshots/booth-detail.png)
+
 ## What you can do
 
 - **Explore the venue in 3D.** Drag to orbit, scroll to zoom, and use the view tabs to switch between the master plan, zones, and exhibition area.
@@ -60,7 +64,8 @@ This is a visual venue-explorer prototype. Booth companies, availability, visito
 │   └── ai-cyprus-expo-favicon.png
 ├── screenshots/
 │   ├── venue-overview.png
-│   └── zones-overview.png
+│   ├── zones-overview.png
+│   └── booth-detail.png
 ├── index.html
 └── README.md
 ```
