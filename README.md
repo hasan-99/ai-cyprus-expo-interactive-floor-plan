@@ -11,6 +11,8 @@
 
 Explore a detailed, interactive 3D model of an expo venue. Visitors can orbit the master plan, jump between venue zones, search for booths, and inspect exhibitor details and availability.
 
+**[Open the live 3D floor plan ↗](https://hasan-99.github.io/ai-cyprus-expo-interactive-floor-plan/)**
+
 ## Screenshots
 
 ### 3D master plan
